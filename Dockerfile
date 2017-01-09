@@ -87,7 +87,7 @@ RUN rm -rf /${LUA_NGINX_MODULE}
 # TODO: Uninstall build only dependencies?
 # TODO: Remove env vars used only for build?
 
-COPY start.sh /_start.sh
+ADD start.sh /_start.sh
 
 # This is the default CMD used by nginx:1.9.2 image
 CMD ["/_start.sh"]
