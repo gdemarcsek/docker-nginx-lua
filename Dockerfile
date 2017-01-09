@@ -1,9 +1,9 @@
 # Based on manual compile instructions at http://wiki.nginx.org/HttpLuaModule#Installation
 FROM ubuntu:14.04
 
-ENV VER_NGINX_DEVEL_KIT=0.2.19
-ENV VER_LUA_NGINX_MODULE=0.9.16
-ENV VER_NGINX=1.7.10
+ENV VER_NGINX_DEVEL_KIT=0.3.0
+ENV VER_LUA_NGINX_MODULE=0.10.7
+ENV VER_NGINX=1.11.7
 ENV VER_LUAJIT=2.0.4
 
 ENV NGINX_DEVEL_KIT ngx_devel_kit-${VER_NGINX_DEVEL_KIT}
@@ -26,9 +26,15 @@ RUN apt-get -qq -y install libpcre3
 RUN apt-get -qq -y install libpcre3-dev
 RUN apt-get -qq -y install zlib1g-dev
 RUN apt-get -qq -y install libssl-dev
+RUN apt-get -qq -y install git
 # LUAJit dependencies
 RUN apt-get -qq -y install gcc
 
+# dnsmasq for simple nginx resolvers
+RUN apt-get -qq -y install dnsmasq
+
+# Copy dnsmasq config
+COPY dnsmasq.conf /etc/dnsmasq.conf
 # ***** DOWNLOAD AND UNTAR *****
 
 # Download
@@ -55,6 +61,19 @@ RUN make -j2
 RUN make install
 RUN ln -s ${NGINX_ROOT}/sbin/nginx /usr/local/sbin/nginx
 
+# Lua libraries
+# lua-resty-http
+WORKDIR /lua-libs
+RUN git clone https://github.com/pintsized/lua-resty-http.git
+WORKDIR /lua-libs/lua-resty-http
+RUN LUA_VERSION=5.1 make install
+
+# lua-resty-cookie
+WORKDIR /lua-libs
+RUN git clone https://github.com/cloudflare/lua-resty-cookie.git
+WORKDIR /lua-libs/lua-resty-cookie
+RUN LUA_VERSION=5.1 make install
+
 # ***** MISC *****
 WORKDIR ${WEB_DIR}
 EXPOSE 80
@@ -68,5 +87,7 @@ RUN rm -rf /${LUA_NGINX_MODULE}
 # TODO: Uninstall build only dependencies?
 # TODO: Remove env vars used only for build?
 
+COPY start.sh /_start.sh
+
 # This is the default CMD used by nginx:1.9.2 image
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["/_start.sh"]
